@@ -1,5 +1,4 @@
 import { createServer } from "node:http";
-import { join } from "node:path";
 import { hostname } from "node:os";
 import wisp from "wisp-server-node";
 import Fastify from "fastify";
@@ -26,62 +25,37 @@ const fastify = Fastify({
 	},
 });
 
-fastify.register(fastifyStatic, {
-	root: publicPath,
-	decorateReply: true,
-});
+// Register static files
+fastify.register(fastifyStatic, { root: publicPath, decorateReply: true });
+fastify.get("/uv/uv.config.js", (req, res) => res.sendFile("uv/uv.config.js", publicPath));
+fastify.register(fastifyStatic, { root: uvPath, prefix: "/uv/", decorateReply: false });
+fastify.register(fastifyStatic, { root: epoxyPath, prefix: "/epoxy/", decorateReply: false });
+fastify.register(fastifyStatic, { root: baremuxPath, prefix: "/baremux/", decorateReply: false });
 
-fastify.get("/uv/uv.config.js", (req, res) => {
-	return res.sendFile("uv/uv.config.js", publicPath);
-});
-
-fastify.register(fastifyStatic, {
-	root: uvPath,
-	prefix: "/uv/",
-	decorateReply: false,
-});
-
-fastify.register(fastifyStatic, {
-	root: epoxyPath,
-	prefix: "/epoxy/",
-	decorateReply: false,
-});
-
-fastify.register(fastifyStatic, {
-	root: baremuxPath,
-	prefix: "/baremux/",
-	decorateReply: false,
-});
-
-fastify.server.on("listening", () => {
-	const address = fastify.server.address();
-
-	// by default we are listening on 0.0.0.0 (every interface)
-	// we just need to list a few
-	console.log("Listening on:");
-	console.log(`\thttp://localhost:${address.port}`);
-	console.log(`\thttp://${hostname()}:${address.port}`);
-	console.log(
-		`\thttp://${
-			address.family === "IPv6" ? `[${address.address}]` : address.address
-		}:${address.port}`
-	);
-});
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
+// Function to gracefully shut down the server in local development
 function shutdown() {
 	console.log("SIGTERM signal received: closing HTTP server");
 	fastify.close();
 	process.exit(0);
 }
 
-let port = parseInt(process.env.PORT || "");
+// Only run locally, NOT on Vercel
+if (!process.env.VERCEL) {
+	process.on("SIGINT", shutdown);
+	process.on("SIGTERM", shutdown);
 
-if (isNaN(port)) port = 8080;
+	let port = parseInt(process.env.PORT || "8080");
 
-fastify.listen({
-	port: port,
-	host: "0.0.0.0",
-});
+	fastify.listen({ port, host: "0.0.0.0" }, () => {
+		const address = fastify.server.address();
+		console.log("Listening on:");
+		console.log(`\thttp://localhost:${address.port}`);
+		console.log(`\thttp://${hostname()}:${address.port}`);
+	});
+}
+
+// Export Fastify as a request handler for Vercel
+export default async function handler(req, res) {
+	await fastify.ready();
+	fastify.server.emit("request", req, res);
+}
