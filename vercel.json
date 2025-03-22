@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "src/index.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "nodejs18.x@18.16.0"
     }
   },
   "routes": [
