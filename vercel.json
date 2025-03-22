@@ -1,11 +1,11 @@
 {
   "version": 2,
   "functions": {
-    "src/index.js": {
+    "api/index.js": {
       "runtime": "nodejs18.x@18.16.0"
     }
   },
   "routes": [
-    { "src": "/(.*)", "dest": "/src/index.js" }
+    { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }
