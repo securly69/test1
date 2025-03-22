@@ -7,7 +7,7 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "@fastify/static": "^8.0.2",
